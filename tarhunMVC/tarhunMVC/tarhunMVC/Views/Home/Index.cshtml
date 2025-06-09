@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Gerçek Zamanlı Sensör Takibi";
+}
+
+<h2>Gerçek Zamanlı Sensör Takibi</h2>
+
+<div id="veriAlani">
+    <p>Veri bekleniyor...</p>
+</div>
+
+<!-- Gerekli script -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function veriGetir() {
+        $.get("/Home/GetSensorData", function (data) {
+            if (data.success) {
+                $("#veriAlani").html(`
+                    <h3><strong>Durum:</strong> ${data.prediction}</h3>
+                    <p><strong>Olasılık:</strong> ${(data.probability * 100).toFixed(2)}%</p>
+                    <p><strong>Analiz:</strong> ${data.analysis}</p>
+                    <p><strong>Öneriler:</strong> ${data.reasons.join(", ")}</p>
+                    <hr>
+                    <p><strong>Sıcaklık:</strong> ${data.temperature} °C</p>
+                    <p><strong>Nem:</strong> ${data.humidity} %</p>
+                    <p><strong>Basınç:</strong> ${data.pressure} hPa</p>
+                    <p><strong>Gaz Direnci:</strong> ${data.gasResistance}</p>
+                    <p><strong>Duman (MQ-2):</strong> ${data.smoke}</p>
+                    <p><strong>Metan (MQ-4):</strong> ${data.methane}</p>
+                    <p><strong>Amonyak (MQ-137):</strong> ${data.ammonia}</p>
+                    <p><strong>CO₂ (ppm):</strong> ${data.co2}</p>
+                `);
+            } else {
+                $("#veriAlani").html("<p>Veri bekleniyor...</p>");
+            }
+        });
+    }
+
+    setInterval(veriGetir, 5000); // 5 saniyede bir veri al
+    veriGetir(); // Sayfa açılır açılmaz başlat
+</script>

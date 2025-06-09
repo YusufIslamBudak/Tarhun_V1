@@ -1,0 +1,112 @@
+﻿@{
+    ViewData["Title"] = "Gerçek Zamanlı Grafik";
+}
+
+<h2>Gerçek Zamanlı Sensör Grafiği</h2>
+
+<label for="sensorSelect"><strong>Gösterilecek Sensör:</strong></label>
+<select id="sensorSelect">
+    <option value="co2">CO₂ (ppm)</option>
+    <option value="temperature">Sıcaklık (°C)</option>
+    <option value="humidity">Nem (%)</option>
+    <option value="pressure">Basınç (hPa)</option>
+    <option value="gasResistance">Gaz Direnci</option>
+    <option value="smoke">Duman (MQ-2)</option>
+    <option value="methane">Metan (MQ-4)</option>
+    <option value="ammonia">Amonyak (MQ-137)</option>
+</select>
+
+<canvas id="sensorChart" width="600" height="300"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    const labels = [];
+    const sensorDataMap = {
+        co2: [],
+        temperature: [],
+        humidity: [],
+        pressure: [],
+        gasResistance: [],
+        smoke: [],
+        methane: [],
+        ammonia: []
+    };
+
+    const chartConfig = {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'CO₂ (ppm)',
+                data: sensorDataMap["co2"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: false,
+            scales: {
+                x: {
+                    title: { display: true, text: 'Zaman' }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    };
+
+    const sensorChart = new Chart(document.getElementById('sensorChart'), chartConfig);
+
+    function updateChartLabel(sensor) {
+        const labelMap = {
+            co2: "CO₂ (ppm)",
+            temperature: "Sıcaklık (°C)",
+            humidity: "Nem (%)",
+            pressure: "Basınç (hPa)",
+            gasResistance: "Gaz Direnci",
+            smoke: "Duman (MQ-2)",
+            methane: "Metan (MQ-4)",
+            ammonia: "Amonyak (MQ-137)"
+        };
+        sensorChart.data.datasets[0].label = labelMap[sensor];
+    }
+
+    function veriGetir() {
+        $.get("/Home/GetSensorData", function (data) {
+            const now = new Date().toLocaleTimeString();
+            const selected = $("#sensorSelect").val();
+
+            if (data.success) {
+                labels.push(now);
+                Object.keys(sensorDataMap).forEach(sensor => {
+                    sensorDataMap[sensor].push(data[sensor]);
+                    if (sensorDataMap[sensor].length > 20) {
+                        sensorDataMap[sensor].shift();
+                    }
+                });
+
+                if (labels.length > 20) labels.shift();
+
+                // Aktif sensöre göre grafik verisi ayarla
+                sensorChart.data.datasets[0].data = sensorDataMap[selected];
+                updateChartLabel(selected);
+                sensorChart.update();
+            }
+        });
+    }
+
+    $("#sensorSelect").on("change", function () {
+        const selected = $(this).val();
+        sensorChart.data.datasets[0].data = sensorDataMap[selected];
+        updateChartLabel(selected);
+        sensorChart.update();
+    });
+
+    setInterval(veriGetir, 5000);
+    veriGetir();
+</script>
